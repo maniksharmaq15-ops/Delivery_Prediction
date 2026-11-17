@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pandas
+numpy
+joblib
+# IMPORTANT: pin these two to the exact versions you trained the .pkl files with
+# (run `pip show scikit-learn` in your notebook environment), e.g. scikit-learn==1.7.2
+scikit-learn
