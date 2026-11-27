@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delivery time check</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --desk: #D9E0EA;
+    --paper: #FFFFFF;
+    --canary: #FFF3B0;
+    --ink: #1F3FA6;
+    --ink-dark: #17327F;
+    --text: #16213A;
+    --muted: #47557A;
+    --rule: #98A8C6;
+    --field: #EEF2FA;
+    --stamp-red: #B72A24;
+    --edge: #B9C4D8;
+    --font: "Barlow", "Segoe UI", system-ui, sans-serif;
+    --font-cond: "Barlow Condensed", "Arial Narrow", "Barlow", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    background: var(--desk);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 48px) 16px 56px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-family: var(--font-cond);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    line-height: 1.02;
+  }
+
+  .lede {
+    margin: 0 0 28px;
+    max-width: 52ch;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+
+  /* The two-part slip */
+  .desk {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    box-shadow: 8px 8px 0 var(--edge);
+  }
+
+  .slip { padding: clamp(20px, 3vw, 36px); }
+  .form-slip { background: var(--paper); }
+  .result-slip {
+    position: relative;
+    background: var(--canary);
+    border-left: 2px dashed var(--rule);
+  }
+
+  h2 {
+    margin: 0 0 14px;
+    font-family: var(--font-cond);
+    font-weight: 600;
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+
+  .group { margin: 0 0 28px; }
+  .group > h2 { padding-bottom: 8px; border-bottom: 2px solid var(--text); }
+
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+  }
+
+  label, .label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  input[type="number"], select {
+    width: 100%;
+    min-height: 46px;
+    padding: 8px 10px;
+    border: 0;
+    border-bottom: 2px solid var(--rule);
+    border-radius: 0;
+    background: var(--field);
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.15rem;
+    font-weight: 500;
+  }
+
+  input[type="number"]:focus, select:focus { border-bottom-color: var(--ink); }
+
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  /* Yes / No choice */
+  .seg { position: relative; display: flex; }
+  .seg input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .seg label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    margin: 0;
+    border: 2px solid var(--rule);
+    cursor: pointer;
+    font-size: 1.05rem;
+  }
+  .seg input + label + input + label { border-left: 0; }
+  .seg input:checked + label {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+  .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 24px;
+    border: 0;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--font-cond);
+    font-weight: 600;
+    font-size: 1.4rem;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--ink-dark); }
+  .btn:disabled { opacity: 0.7; cursor: progress; }
+
+  .status {
+    margin: 14px 0 0;
+    min-height: 1.5em;
+    color: var(--muted);
+  }
+  .status.error {
+    padding-left: 10px;
+    border-left: 4px solid var(--stamp-red);
+    color: var(--stamp-red);
+    font-weight: 500;
+  }
+
+  /* Result slip */
+  .result-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px 16px;
+    min-height: 58px;
+  }
+  .result-head h2 { margin: 0; }
+  .stamp {
+    flex: none;
+    margin: 4px 6px 0 0;
+    padding: 4px 14px;
+    border: 4px solid currentColor;
+    font-family: var(--font-cond);
+    font-weight: 700;
+    font-size: 1.6rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    transform: rotate(-8deg);
+    opacity: 0.92;
+    mix-blend-mode: multiply;
+  }
+  .stamp.late { color: var(--stamp-red); }
+  .stamp.ontime { color: var(--ink); }
+  .stamp.thunk { animation: thunk 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+  @keyframes thunk {
+    from { transform: rotate(-8deg) scale(1.7); opacity: 0; }
+    to   { transform: rotate(-8deg) scale(1);   opacity: 0.92; }
+  }
+
+  .big {
+    margin: 36px 0 0;
+    font-family: var(--font-cond);
+    font-weight: 700;
+    font-size: clamp(4.5rem, 12vw, 7.5rem);
+    line-height: 0.95;
+    color: var(--ink);
+  }
+  .big .unit {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .caption {
+    margin: 8px 0 0;
+    max-width: 36ch;
+    color: var(--muted);
+  }
+
+  .track-wrap { margin-top: 22px; }
+  .track {
+    position: relative;
+    height: 84px;
+    margin: 0 30px;
+  }
+  .track .line {
+    position: absolute;
+    left: 0; right: 0; top: 42px;
+    height: 2px;
+    background: var(--text);
+  }
+  .track .ticks {
+    position: absolute;
+    left: 0; right: 0; top: 37px;
+    height: 12px;
+    background-image: linear-gradient(to right, var(--text) 1.5px, transparent 1.5px);
+    background-size: calc(100% / var(--n, 6)) 100%;
+    background-repeat: repeat-x;
+    border-right: 1.5px solid var(--text);
+  }
+  .mark {
+    position: absolute;
+    transform: translateX(-50%);
+    text-align: center;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .mark.promised { top: 0; }
+  .mark.promised .bar {
+    display: block;
+    width: 3px;
+    height: 36px;
+    margin: 2px auto 0;
+    background: var(--text);
+  }
+  .mark.predicted { top: 33px; z-index: 2; }
+  .mark.predicted .dot {
+    display: block;
+    width: 20px;
+    height: 20px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: var(--ink);
+    box-shadow: 0 0 0 3px var(--canary);
+  }
+  .mark.predicted span { display: block; margin-top: 4px; font-weight: 600; }
+  .track.late .dot { background: var(--stamp-red); }
+  .track-note { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+  .facts {
+    margin: 22px 0 0;
+    border-top: 2px solid var(--text);
+  }
+  .facts .row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .facts dt { font-weight: 500; color: var(--muted); }
+  .facts dd {
+    margin: 0;
+    font-family: var(--font-cond);
+    font-weight: 600;
+    font-size: 1.7rem;
+    line-height: 1.1;
+  }
+  .meter {
+    grid-column: 1 / -1;
+    height: 14px;
+    border: 2px solid var(--text);
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .meter span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--ink);
+    transition: width 0.5s ease-out;
+  }
+  .meter.late span { background: var(--stamp-red); }
+
+  .fineprint {
+    margin: 28px 0 0;
+    max-width: 60ch;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 760px) {
+    .desk { grid-template-columns: 1fr; box-shadow: 5px 5px 0 var(--edge); }
+    .result-slip { border-left: 0; border-top: 2px dashed var(--rule); }
+  }
+  @media (max-width: 520px) {
+    .fields { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stamp.thunk { animation: none; }
+    .meter span { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Delivery time check</h1>
+  <p class="lede">Estimate how many days an order will take to arrive and how likely it is to be late.</p>
+
+  <div class="desk">
+    <form class="slip form-slip" id="order-form" novalidate>
+      <section class="group" aria-labelledby="g-order">
+        <h2 id="g-order">Order</h2>
+        <div class="fields">
+          <div>
+            <label for="distance_km">Distance (km)</label>
+            <input id="distance_km" name="distance_km" type="number" inputmode="decimal" step="any" min="0.1" value="1250.5" required>
+          </div>
+          <div>
+            <label for="product_weight_kg">Weight (kg)</label>
+            <input id="product_weight_kg" name="product_weight_kg" type="number" inputmode="decimal" step="any" min="0.01" value="2.4" required>
+          </div>
+          <div>
+            <label for="seller_handling_hours">Seller handling time (hours)</label>
+            <input id="seller_handling_hours" name="seller_handling_hours" type="number" inputmode="decimal" step="any" min="0" value="12" required>
+          </div>
+          <div>
+            <label for="promised_days">Promised delivery (days)</label>
+            <input id="promised_days" name="promised_days" type="number" inputmode="numeric" step="1" min="1" value="5" required>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="g-conditions">
+        <h2 id="g-conditions">Conditions</h2>
+        <div class="fields">
+          <div>
+            <label for="weather">Weather</label>
+            <select id="weather" name="weather"><option>Loading…</option></select>
+          </div>
+          <div>
+            <label for="traffic_level">Traffic</label>
+            <select id="traffic_level" name="traffic_level"><option>Loading…</option></select>
+          </div>
+          <div>
+            <label for="region">Region</label>
+            <select id="region" name="region"><option>Loading…</option></select>
+          </div>
+          <div>
+            <span class="label" id="fest-label">Festival season</span>
+            <div class="seg" role="radiogroup" aria-labelledby="fest-label">
+              <input type="radio" name="is_festival_season" id="fest-no" value="No" checked>
+              <label for="fest-no">No</label>
+              <input type="radio" name="is_festival_season" id="fest-yes" value="Yes">
+              <label for="fest-yes">Yes</label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <button class="btn" id="submit" type="submit" disabled>Check delivery time</button>
+      <p class="status" id="status" role="status"></p>
+    </form>
+
+    <section class="slip result-slip" aria-labelledby="res-title">
+      <div class="result-head">
+        <h2 id="res-title">Prediction</h2>
+        <div class="stamp" id="stamp" hidden></div>
+      </div>
+
+      <p class="big"><output id="days" for="order-form">–</output><span class="unit"> days</span></p>
+      <p class="caption" id="caption" aria-live="polite">Fill in the order details, then select Check delivery time.</p>
+
+      <div class="track-wrap" id="track-wrap" hidden>
+        <div class="track" id="track" aria-hidden="true">
+          <div class="line"></div>
+          <div class="ticks"></div>
+          <div class="mark promised" id="mark-promised"><span id="mark-promised-label"></span><i class="bar"></i></div>
+          <div class="mark predicted" id="mark-predicted"><i class="dot"></i><span id="mark-predicted-label"></span></div>
+        </div>
+        <p class="track-note">Each tick is one day.</p>
+      </div>
+
+      <dl class="facts">
+        <div class="row"><dt>Promised delivery</dt><dd id="f-promised">–</dd></div>
+        <div class="row"><dt>Expected delay</dt><dd id="f-delay">–</dd></div>
+        <div class="row">
+          <dt>Chance of being late</dt><dd id="f-prob">–</dd>
+          <div class="meter" id="meter" aria-hidden="true"><span id="meter-fill"></span></div>
+        </div>
+      </dl>
+    </section>
+  </div>
+
+  <p class="fineprint">Estimates come from models trained on past orders. They are a guide, not a delivery guarantee.</p>
+  <noscript><p class="fineprint">This page needs JavaScript to show predictions.</p></noscript>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('order-form');
+  var btn = $('submit');
+  var statusEl = $('status');
+  var slowTimer = null;
+
+  function trim(n) { return String(Math.round(Number(n) * 10) / 10); }
+  function fmt(n) { return Number(n).toFixed(1); }
+
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg || '';
+    statusEl.className = 'status' + (isError ? ' error' : '');
+  }
+
+  // Django protects POST requests with a CSRF token; the page view sets it as a cookie.
+  function csrfToken() {
+    var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  function describeError(data) {
+    if (data && typeof data.detail === 'string') return data.detail;
+    if (data && Array.isArray(data.detail)) {
+      return data.detail.map(function (d) {
+        var field = (d.loc || []).slice(-1)[0];
+        return (field ? field + ': ' : '') + d.msg;
+      }).join('. ');
+    }
+    return 'Something went wrong. Try again.';
+  }
+
+  function loadOptions() {
+    fetch('/options')
+      .then(function (res) {
+        if (!res.ok) throw new Error('options');
+        return res.json();
+      })
+      .then(function (opts) {
+        var prefer = { weather: 'Clear', traffic_level: 'Medium', region: 'North' };
+        ['weather', 'traffic_level', 'region'].forEach(function (name) {
+          var sel = $(name);
+          var values = opts[name] || [];
+          sel.innerHTML = '';
+          values.forEach(function (v) { sel.add(new Option(v, v)); });
+          if (values.indexOf(prefer[name]) !== -1) sel.value = prefer[name];
+        });
+        btn.disabled = false;
+      })
+      .catch(function () {
+        setStatus("Couldn't load the weather, traffic and region lists. Reload the page to try again.", true);
+      });
+  }
+
+  function render(p, d) {
+    var late = !!d.is_late;
+    var promised = Number(p.promised_days);
+    var predicted = Number(d.predicted_delivery_days);
+
+    $('days').textContent = fmt(predicted);
+    $('caption').textContent = 'Expected in ' + fmt(predicted) + ' days against ' + trim(promised) + ' promised.';
+    $('f-promised').textContent = trim(promised) + ' days';
+    $('f-delay').textContent = trim(d.predicted_delay_days) + ' days';
+    $('f-prob').textContent = Math.round(d.late_probability * 100) + '%';
+
+    var meter = $('meter');
+    meter.classList.toggle('late', late);
+    $('meter-fill').style.width = Math.round(d.late_probability * 100) + '%';
+
+    var scale = Math.max(6, Math.ceil(Math.max(promised, predicted)) + 1);
+    var track = $('track');
+    track.style.setProperty('--n', scale);
+    track.classList.toggle('late', late);
+    function pct(v) { return Math.min(100, Math.max(0, (v / scale) * 100)) + '%'; }
+    $('mark-promised').style.left = pct(promised);
+    $('mark-predicted').style.left = pct(predicted);
+    $('mark-promised-label').textContent = 'Promised ' + trim(promised);
+    $('mark-predicted-label').textContent = 'Predicted ' + fmt(predicted);
+    $('track-wrap').hidden = false;
+
+    var stamp = $('stamp');
+    stamp.hidden = false;
+    stamp.textContent = late ? 'Likely late' : 'Likely on time';
+    stamp.className = 'stamp ' + (late ? 'late' : 'ontime');
+    void stamp.offsetWidth; // restart the animation on every new result
+    stamp.classList.add('thunk');
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    var payload = {
+      distance_km: Number($('distance_km').value),
+      promised_days: Number($('promised_days').value),
+      seller_handling_hours: Number($('seller_handling_hours').value),
+      product_weight_kg: Number($('product_weight_kg').value),
+      weather: $('weather').value,
+      is_festival_season: form.elements['is_festival_season'].value,
+      traffic_level: $('traffic_level').value,
+      region: $('region').value
+    };
+
+    setStatus('');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    slowTimer = setTimeout(function () {
+      setStatus('Still working. If the service has been idle, it can take up to a minute to start.', false);
+    }, 5000);
+
+    fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+      body: JSON.stringify(payload)
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error(describeError(data));
+          return data;
+        });
+      })
+      .then(function (data) {
+        render(payload, data);
+        setStatus('');
+      })
+      .catch(function (err) {
+        var offline = err instanceof TypeError;
+        setStatus(offline
+          ? "Couldn't reach the service. Check your connection and try again."
+          : err.message, true);
+      })
+      .then(function () {
+        clearTimeout(slowTimer);
+        btn.disabled = false;
+        btn.textContent = 'Check delivery time';
+      });
+  });
+
+  loadOptions();
+})();
+</script>
+</body>
+</html>
