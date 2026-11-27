@@ -6,3 +6,5 @@ joblib==1.6.0
 # Must match the scikit-learn version the .pkl files were trained with (1.9.1).
 # If you retrain in a different version, update this line to match.
 scikit-learn==1.9.1
+Django
+gunicorn
